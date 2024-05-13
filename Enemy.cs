@@ -15,6 +15,7 @@ public class Enemy : MonoBehaviour
     Rigidbody2D rigid;
     Animator anim;
     SpriteRenderer spriter;
+    WaitForFixedUpdate wait;
 
     // Start is called before the first frame update
     void Awake()
@@ -22,12 +23,13 @@ public class Enemy : MonoBehaviour
         rigid = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         spriter = GetComponent<SpriteRenderer>();
+        wait = new WaitForFixedUpdate();
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-        if(!isLive)
+        if(!isLive || anim.GetCurrentAnimatorStateInfo(0).IsName("Hit"))
             return;
 
         Vector2 dirVec = target.position - rigid.position;
@@ -60,14 +62,21 @@ public class Enemy : MonoBehaviour
         if (!collision.CompareTag("Bullet"))
             return;
         health -= collision.GetComponent<Bullet>().damage;
+        StartCoroutine(KnockBack());
 
         if (health > 0) {
-            // .. live, Hit Action
-
+            anim.SetTrigger("Hit");
         } else {
             // .. Die
             Dead();
         }
+    }
+
+    IEnumerator KnockBack() {
+        yield return wait;
+        Vector3 playerPos = GameManager.instance.player.transform.position;
+        Vector3 dirVec = transform.position - playerPos;
+        rigid.AddForce(dirVec.normalized * 3, ForceMode2D.Impulse);
     }
 
     void Dead() {
